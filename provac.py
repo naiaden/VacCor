@@ -4,13 +4,14 @@ import sys
 from multiprocessing import Process, Queue
 from colorama import init, Fore, Back, Style
 import getopt
-
+ 
 class VacancyParser:
 	use_ucto = True
 	extract = True
 	default_sbi = "nosbi"
 	threads = 24
-	input = ""
+	input_file = ""
+	output_dir = ""
 
 	def printHelp(self):
 		print "Vacancy Parser v0.1 -- louis@naiaden.nl\n"
@@ -36,7 +37,7 @@ class VacancyParser:
 				self.printHelp()
 				sys.exit()
 			if opt in ('-d', '--dir'):
-				self.dir = arg
+				self.output_dir = arg
 			if opt in ('-U', '--no-ucto'):
 				self.use_ucto = False
 			if opt in ('-E', '--no-extract'):
@@ -46,12 +47,12 @@ class VacancyParser:
 			if opt in ('-t', '--threads'):
 				self.threads = arg
 			if opt in ('-f', '--input'):
-				self.input = arg
+				self.input_file = arg
 		
 		init(autoreset=True)
 		
 		if not self.input:
-			print "No input is provided. Program halts"
+			print "No input file is provided. Program halts"
 
 	def fast_iter(self, context, func, queue):
 		for event, elem in context:
@@ -67,12 +68,17 @@ class VacancyParser:
 			if not id and not sbi and not text:
 				return
 			
+			if not self.output_dir:
+				files_dir = "%s" % sbi
+			else:
+				files_dir = self.output_dir
+			
 			if self.extract:
-				f = open("%s/%s.utxt" % (sbi, id), 'w')
+				f = open("%s/%s.utxt" % (files_dir, id), 'w')
 				f.write(text)
 				f.close()
 			if self.use_ucto:
-				os.system("ucto -s \"\" -P -S -L nl %s/%s.utxt 2>/dev/null | tr -s ' ' > %s/%s.txt" % (sbi, id, sbi, id))
+				os.system("ucto -s \"\" -P -S -L nl %s/%s.utxt 2>/dev/null | tr -s ' ' > %s/%s.txt" % (files_dir, id, files_dir, id))
 
 	def process_element_read(self, elem, queue):
 
@@ -90,7 +96,7 @@ class VacancyParser:
 		
 				if tag == 'fulltxt' and self.id is not None:
 					if self.sbi == "" or self.sbi is None:
-						self.sbi = "nosbi"					
+						self.sbi = self.default_sbi					
 					
 					queue.put((self.id, self.sbi, val))
 					#print Fore.GREEN + "Processed [%s] %s" % (self.id, self.sbi)
@@ -110,7 +116,7 @@ class VacancyParser:
 			wP.append(p)
 			p.start()
 		
-		context = etree.iterparse( "../jobfeed.2011.uniq.xml")
+		context = etree.iterparse(self.input_file)
 		rP = Process(target=vp.fast_iter, args=(context,vp.process_element_read, wQ,))
 		rP.start()
 		rP.join()

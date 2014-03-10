@@ -22,10 +22,11 @@ class VacancyParser:
 		print "-E, --no-extract             Skip the extraction step"
 		print "-s, --default-sbi <string>   The value for unknown sbi. Default is nosbi (not used in combination with -d)"
 		print "-t, --threads <n>            Number of threads. Default is 24"
+		print "-f, --input <string>         The input xml file"
 
 	def __init__(self, cmdArgs):
 		try:
-			opts, args = getopt.getopt(cmdArgs, 'hd:UEs:t:', ['help', 'dir=', 'no-ucto', 'no-extract', 'default-sbi=', 'threads='])
+			opts, args = getopt.getopt(cmdArgs, 'hd:UEs:t:f:', ['help', 'dir=', 'no-ucto', 'no-extract', 'default-sbi=', 'threads=', 'input='])
 		except getopt.GetoptError:
 			self.printHelp()
 			sys.exit(2)
@@ -66,7 +67,7 @@ class VacancyParser:
 			if not id and not sbi and not text:
 				return
 			
-			if self.flatten:
+			if self.extract:
 				f = open("%s/%s.utxt" % (sbi, id), 'w')
 				f.write(text)
 				f.close()
